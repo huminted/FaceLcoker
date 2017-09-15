@@ -134,7 +134,7 @@ public class RegisterActivity extends Activity implements SurfaceHolder.Callback
 						canvas.scale((float) dst.width() / (float) src.width(), (float) dst.height() / (float) src.height());
 						canvas.translate(dst.left / scale, dst.top / scale);
 						for (AFD_FSDKFace face : result) {
-							mPaint.setColor(Color.RED);
+							mPaint.setColor(Color.WHITE);
 							mPaint.setStrokeWidth(10.0f);
 							mPaint.setStyle(Paint.Style.STROKE);
 							canvas.drawRect(face.getRect(), mPaint);
@@ -258,7 +258,6 @@ public class RegisterActivity extends Activity implements SurfaceHolder.Callback
 					mExtImageView.setImageBitmap((Bitmap) msg.obj);
 					new AlertDialog.Builder(RegisterActivity.this)
 							.setTitle("请输入注册名字")
-							.setIcon(android.R.drawable.ic_dialog_info)
 							.setView(layout)
 							.setPositiveButton("确定", RegisterActivity.this)
 							.setNegativeButton("取消", RegisterActivity.this)

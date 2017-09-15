@@ -87,7 +87,6 @@ public class MainActivity extends Activity implements OnClickListener, AlertDial
 			case R.id.button1:
 				new AlertDialog.Builder(this)
 						.setTitle("请选择注册方式")
-						.setIcon(android.R.drawable.ic_dialog_info)
 						.setItems(new String[]{"打开图片", "拍摄照片"}, this)
 						.show();
 				break;
@@ -95,8 +94,30 @@ public class MainActivity extends Activity implements OnClickListener, AlertDial
 				if( ((Application)getApplicationContext()).mFaceDB.mRegister.isEmpty() ) {
 					Toast.makeText(this, "没有注册人脸，请先注册！", Toast.LENGTH_SHORT).show();
 				} else {
-					Intent it = new Intent(MainActivity.this, DetecterActivity.class);
-					startActivityForResult(it, REQUEST_CODE_OP);
+					AlertDialog.Builder builder=new AlertDialog.Builder(this);
+					builder.setTitle("请选择摄像头");
+					builder.setItems(new String[]{"前置摄像头", "后置摄像头"}, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialogInterface, int i) {
+							switch (i){
+								case 0:
+									Intent back = new Intent(MainActivity.this, DetecterActivity_Front.class);
+									startActivityForResult(back, REQUEST_CODE_OP);
+
+								break;
+								case 1:
+									Intent front = new Intent(MainActivity.this, DetecterActivity.class);
+									startActivityForResult(front, REQUEST_CODE_OP);
+
+							}
+
+						}
+					});
+					builder.show();
+
+
+
+
 				}
 				break;
 			default:;

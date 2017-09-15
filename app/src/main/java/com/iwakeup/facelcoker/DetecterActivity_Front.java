@@ -11,6 +11,7 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -36,25 +37,25 @@ import com.guo.android_extend.widget.CameraFrameData;
 import com.guo.android_extend.widget.CameraGLSurfaceView;
 import com.guo.android_extend.widget.CameraSurfaceView;
 import com.guo.android_extend.widget.CameraSurfaceView.OnCameraListener;
-import com.qmuiteam.qmui.widget.QMUIEmptyView;
-import com.qmuiteam.qmui.widget.dialog.QMUIDialog;
-import com.qmuiteam.qmui.widget.dialog.QMUITipDialog;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
-/**
- * Created by gqj3375 on 2017/4/28.
- */
 
-public class DetecterActivity extends Activity implements OnCameraListener, View.OnTouchListener, Camera.AutoFocusCallback {
+public class DetecterActivity_Front extends Activity implements OnCameraListener, View.OnTouchListener, Camera.AutoFocusCallback {
     private final String TAG = this.getClass().getSimpleName();
 
     private int mWidth, mHeight, mFormat;
     private CameraSurfaceView mSurfaceView;
+    private SurfaceHolder holder;
     private CameraGLSurfaceView mGLSurfaceView;
     private Camera mCamera;
+    private  Button take;
+    private int cameraPosition = 1;//0代表前置摄像头，1代表后置摄像头
+
 
     AFT_FSDKVersion version = new AFT_FSDKVersion();
     AFT_FSDKEngine engine = new AFT_FSDKEngine();
@@ -73,12 +74,17 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
         }
     };
 
+
+
+
+
+
     class FRAbsLoop extends AbsLoop {
 
         AFR_FSDKVersion version = new AFR_FSDKVersion();
         AFR_FSDKEngine engine = new AFR_FSDKEngine();
         AFR_FSDKFace result = new AFR_FSDKFace();
-        List<FaceDB.FaceRegist> mResgist = ((Application)DetecterActivity.this.getApplicationContext()).mFaceDB.mRegister;
+        List<FaceDB.FaceRegist> mResgist = ((Application) DetecterActivity_Front.this.getApplicationContext()).mFaceDB.mRegister;
 
         @Override
         public void setup() {
@@ -99,7 +105,7 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
                 for (FaceDB.FaceRegist fr : mResgist) {
                     for (AFR_FSDKFace face : fr.mFaceList) {
                         error = engine.AFR_FSDK_FacePairMatching(result, face, score);
-                        Log.d(TAG,  "Score:" + score.getScore() + ", AFR_FSDK_FacePairMatching=" + error.getCode());
+                        Log.d(TAG, "Score:" + score.getScore() + ", AFR_FSDK_FacePairMatching=" + error.getCode());
                         if (max < score.getScore()) {
                             max = score.getScore();
                             name = fr.mName;
@@ -132,20 +138,16 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
                             mTextView.setAlpha(1.0f);
                             mTextView.setText(mNameShow);
                             mTextView1.setVisibility(View.VISIBLE);
-                            mTextView1.setText("置信度：" + (float)((int)(max_score * 1000)) / 1000.0);
-                            mImageView.setRotation(90);
+                            mTextView1.setText("置信度：" + (float) ((int) (max_score * 1000)) / 1000.0);
+                            mImageView.setRotation(270);
                             mImageView.setImageAlpha(255);
                             mImageView.setImageBitmap(bmp);
-
-                            System.out.println(max_score);
                             ShowDialog(max_score);
-
-
                         }
                     });
                 } else {
                     final String mNameShow = "未识别";
-                    DetecterActivity.this.runOnUiThread(new Runnable() {
+                    DetecterActivity_Front.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             mTextView.setAlpha(1.0f);
@@ -168,7 +170,6 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
             Log.d(TAG, "AFR_FSDK_UninitialEngine : " + error.getCode());
         }
     }
-
     private void ShowDialog(float max_score  ) {
         AlertDialog.Builder  builder =new AlertDialog.Builder(this);
 
@@ -189,6 +190,8 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
     private TextView mTextView;
     private TextView mTextView1;
     private ImageView mImageView;
+    private Button switchCamera;
+    private int flag = 0;
 
     /* (non-Javadoc)
      * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -198,12 +201,15 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
         // TODO Auto-generated method stub
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.activity_camera);
+
+
         mGLSurfaceView = (CameraGLSurfaceView) findViewById(R.id.glsurfaceView);
         mGLSurfaceView.setOnTouchListener(this);
         mSurfaceView = (CameraSurfaceView) findViewById(R.id.surfaceView);
         mSurfaceView.setOnCameraListener(this);
-        mSurfaceView.setupGLSurafceView(mGLSurfaceView, true, false, 90);
+        mSurfaceView.setupGLSurafceView(mGLSurfaceView, true, false, 270);
         mSurfaceView.debug_print_fps(true, false);
+
 
         //snap
         mTextView = (TextView) findViewById(R.id.textView);
@@ -215,7 +221,7 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
 
         mHandler = new Handler();
         mWidth = 1280;
-        mHeight =960;
+        mHeight = 960;
         mFormat = ImageFormat.NV21;
 
         AFT_FSDKError err = engine.AFT_FSDK_InitialFaceEngine(FaceDB.appid, FaceDB.ft_key, AFT_FSDKEngine.AFT_OPF_0_HIGHER_EXT, 16, 5);
@@ -233,7 +239,6 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
     @Override
     protected void onDestroy() {
         // TODO Auto-generated method stub
-
         mCamera.release();
         mCamera=null;
         super.onDestroy();
@@ -241,29 +246,32 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
         AFT_FSDKError err = engine.AFT_FSDK_UninitialFaceEngine();
         Log.d(TAG, "AFT_FSDK_UninitialFaceEngine =" + err.getCode());
 
-
-
-
     }
 
     @Override
     public Camera setupCamera() {
+
+
+
         // TODO Auto-generated method stub
-        mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+        mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
+
+        mCamera.setDisplayOrientation(180);
+
         try {
             Camera.Parameters parameters = mCamera.getParameters();
-            parameters.setPreviewSize(mWidth,mHeight );
+            parameters.setPreviewSize(mWidth, mHeight);
             parameters.setPreviewFormat(mFormat);
 
-            for( Camera.Size size : parameters.getSupportedPreviewSizes()) {
+            for (Camera.Size size : parameters.getSupportedPreviewSizes()) {
                 Log.d(TAG, "SIZE:" + size.width + "x" + size.height);
             }
-            for( Integer format : parameters.getSupportedPreviewFormats()) {
+            for (Integer format : parameters.getSupportedPreviewFormats()) {
                 Log.d(TAG, "FORMAT:" + format);
             }
 
             List<int[]> fps = parameters.getSupportedPreviewFpsRange();
-            for(int[] count : fps) {
+            for (int[] count : fps) {
                 Log.d(TAG, "T:");
                 for (int data : count) {
                     Log.d(TAG, "V=" + data);
@@ -287,10 +295,17 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
         return mCamera;
     }
 
+
+
+
+
+
+
     @Override
     public void setupChanged(int format, int width, int height) {
 
     }
+
 
     @Override
     public boolean startPreviewLater() {
@@ -299,7 +314,7 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
     }
 
     @Override
-    public Object onPreview(byte[] data, int width, int height, int format, long timestamp  ) {
+    public Object onPreview(byte[] data, int width, int height, int format, long timestamp) {
         AFT_FSDKError err = engine.AFT_FSDK_FaceFeatureDetect(data, width, height, AFT_FSDKEngine.CP_PAF_NV21, result);
         Log.d(TAG, "AFT_FSDK_FaceFeatureDetect =" + err.getCode());
         Log.d(TAG, "Face=" + result.size());
