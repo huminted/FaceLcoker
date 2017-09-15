@@ -14,6 +14,7 @@ public class Application extends android.app.Application {
 	private final String TAG = this.getClass().toString();
 	FaceDB mFaceDB;
 
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
