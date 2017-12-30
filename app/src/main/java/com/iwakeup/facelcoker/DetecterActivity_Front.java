@@ -2,6 +2,8 @@ package com.iwakeup.facelcoker;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -11,15 +13,16 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.arcsoft.facerecognition.AFR_FSDKEngine;
 import com.arcsoft.facerecognition.AFR_FSDKError;
@@ -37,12 +40,15 @@ import com.guo.android_extend.widget.CameraFrameData;
 import com.guo.android_extend.widget.CameraGLSurfaceView;
 import com.guo.android_extend.widget.CameraSurfaceView;
 import com.guo.android_extend.widget.CameraSurfaceView.OnCameraListener;
+import com.iwakeup.facelcoker.library.BluetoothSPP;
+import com.iwakeup.facelcoker.library.BluetoothState;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+
+import static com.iwakeup.facelcoker.DataShare.bluetooth;
 
 
 public class DetecterActivity_Front extends Activity implements OnCameraListener, View.OnTouchListener, Camera.AutoFocusCallback {
@@ -55,7 +61,7 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
     private Camera mCamera;
     private  Button take;
     private int cameraPosition = 1;//0代表前置摄像头，1代表后置摄像头
-
+    ProgressBar progressBar;
 
     AFT_FSDKVersion version = new AFT_FSDKVersion();
     AFT_FSDKEngine engine = new AFT_FSDKEngine();
@@ -73,9 +79,6 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
             mImageView.setImageAlpha(128);
         }
     };
-
-
-
 
 
 
@@ -142,7 +145,9 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
                             mImageView.setRotation(270);
                             mImageView.setImageAlpha(255);
                             mImageView.setImageBitmap(bmp);
-                            ShowDialog(max_score);
+                            cast();
+
+
                         }
                     });
                 } else {
@@ -156,6 +161,8 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
                             mImageView.setImageAlpha(255);
                             mImageView.setRotation(90);
                             mImageView.setImageBitmap(bmp);
+
+
                         }
                     });
                 }
@@ -164,34 +171,30 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
 
         }
 
+
+        private void cast() {
+            Intent intent2 = new Intent("com.iwakeup.kaixue.View");
+            intent2.putExtra("errCode",0);
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent2);
+            System.out.println("发送广播");
+
+
+        }
+
         @Override
         public void over() {
+
+
             AFR_FSDKError error = engine.AFR_FSDK_UninitialEngine();
             Log.d(TAG, "AFR_FSDK_UninitialEngine : " + error.getCode());
         }
     }
-    private void ShowDialog(float max_score  ) {
-        AlertDialog.Builder  builder =new AlertDialog.Builder(this);
 
-        builder.setTitle("成功");
-        builder.setMessage("识别成功");
-        final AlertDialog dialog=builder.show();
-        if ( max_score>0.5){
-            dialog.show();
-        }
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                dialog.dismiss();
-            }
-        }, 1000);
-    }
+
 
     private TextView mTextView;
     private TextView mTextView1;
     private ImageView mImageView;
-    private Button switchCamera;
-    private int flag = 0;
 
     /* (non-Javadoc)
      * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -200,9 +203,10 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
     protected void onCreate(Bundle savedInstanceState) {
         // TODO Auto-generated method stub
         super.onCreate(savedInstanceState);
+
+
         this.setContentView(R.layout.activity_camera);
-
-
+        bluetooth=new BluetoothSPP(getApplicationContext());
         mGLSurfaceView = (CameraGLSurfaceView) findViewById(R.id.glsurfaceView);
         mGLSurfaceView.setOnTouchListener(this);
         mSurfaceView = (CameraSurfaceView) findViewById(R.id.surfaceView);
@@ -210,10 +214,12 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
         mSurfaceView.setupGLSurafceView(mGLSurfaceView, true, false, 270);
         mSurfaceView.debug_print_fps(true, false);
 
-
+        progressBar=findViewById(R.id.progressBar);
+        progressBar.setMax(100);
         //snap
-        mTextView = (TextView) findViewById(R.id.textView);
+        mTextView = (TextView) findViewById(R.id.dd);
         mTextView.setText("");
+
         mTextView1 = (TextView) findViewById(R.id.textView1);
         mTextView1.setText("");
 
@@ -294,10 +300,6 @@ public class DetecterActivity_Front extends Activity implements OnCameraListener
         }
         return mCamera;
     }
-
-
-
-
 
 
 

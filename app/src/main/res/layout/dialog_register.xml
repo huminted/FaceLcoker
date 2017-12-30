@@ -8,7 +8,9 @@
         android:id="@+id/extimageview"
         android:layout_width="128dp"
         android:layout_height="128dp"
-        android:layout_centerHorizontal="true"/>
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp" />
 
     <EditText
         android:id="@+id/editview"
@@ -19,4 +21,29 @@
         android:layout_below="@+id/extimageview"
         android:layout_marginTop="16dp"
         android:hint="输入名字"/>
+
+    <TextView
+        android:id="@+id/cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="取消"
+        android:textColor="@color/colorAccent"
+        android:textSize="16sp"
+        android:layout_alignBaseline="@+id/positive"
+        android:layout_alignBottom="@+id/positive"
+        android:layout_toStartOf="@+id/positive"
+        android:layout_marginEnd="23dp"/>
+
+    <TextView
+        android:id="@+id/positive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="11dp"
+        android:layout_marginTop="19dp"
+        android:paddingBottom="20dp"
+        android:text="确定"
+        android:textColor="@color/colorAccent"
+        android:textSize="16sp"
+        android:layout_below="@+id/editview"
+        android:layout_toEndOf="@+id/editview"/>
 </RelativeLayout>

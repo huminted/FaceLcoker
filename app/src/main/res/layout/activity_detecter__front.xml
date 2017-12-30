@@ -6,4 +6,11 @@
     android:layout_height="match_parent"
     tools:context="com.iwakeup.facelcoker.DetecterActivity_Front">
 
+    <QMUIProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:layout_editor_absoluteX="182dp"
+        tools:layout_editor_absoluteY="261dp" />
 </android.support.constraint.ConstraintLayout>

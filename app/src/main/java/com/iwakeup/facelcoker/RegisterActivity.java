@@ -17,6 +17,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arcsoft.facedetection.AFD_FSDKEngine;
@@ -134,7 +135,7 @@ public class RegisterActivity extends Activity implements SurfaceHolder.Callback
 						canvas.scale((float) dst.width() / (float) src.width(), (float) dst.height() / (float) src.height());
 						canvas.translate(dst.left / scale, dst.top / scale);
 						for (AFD_FSDKFace face : result) {
-							mPaint.setColor(Color.WHITE);
+							mPaint.setColor(Color.parseColor("#1abc9c"));
 							mPaint.setStrokeWidth(10.0f);
 							mPaint.setStyle(Paint.Style.STROKE);
 							canvas.drawRect(face.getRect(), mPaint);
@@ -256,12 +257,37 @@ public class RegisterActivity extends Activity implements SurfaceHolder.Callback
 					mEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(16)});
 					mExtImageView = (ExtImageView) layout.findViewById(R.id.extimageview);
 					mExtImageView.setImageBitmap((Bitmap) msg.obj);
-					new AlertDialog.Builder(RegisterActivity.this)
-							.setTitle("请输入注册名字")
-							.setView(layout)
-							.setPositiveButton("确定", RegisterActivity.this)
-							.setNegativeButton("取消", RegisterActivity.this)
-							.show();
+					final AlertDialog.Builder  builder =new AlertDialog.Builder(RegisterActivity.this);
+                    builder.setView(layout);
+                    builder.setTitle("请输入注册名字");
+                    final AlertDialog dialog=builder.show();
+                    TextView positive=layout.findViewById(R.id.positive);
+                    TextView cancel=layout.findViewById(R.id.cancel);
+                    positive.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            if (mEditText.getText().length()==0){
+                                Toast.makeText(RegisterActivity.this,"请输入名字",Toast.LENGTH_SHORT).show();
+
+                            }
+                            else {
+                                ((Application)RegisterActivity.this.getApplicationContext()).mFaceDB.addFace(mEditText.getText().toString(), mAFR_FSDKFace);
+                                Toast.makeText(RegisterActivity.this,"注册成功",Toast.LENGTH_SHORT).show();
+                                finish();
+
+                            }
+                        }
+                    });
+                    cancel.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            dialog.dismiss();
+                            finish();
+                        }
+                    });
+
+                    dialog.show();
+
 				} else if(msg.arg1 == MSG_EVENT_NO_FEATURE ){
 					Toast.makeText(RegisterActivity.this, "人脸特征无法检测，请换一张图片", Toast.LENGTH_SHORT).show();
 				} else if(msg.arg1 == MSG_EVENT_NO_FACE ){

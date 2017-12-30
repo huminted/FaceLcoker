@@ -1,7 +1,7 @@
 package com.iwakeup.facelcoker;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -13,11 +13,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.Surface;
-import android.view.SurfaceHolder;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.arcsoft.facerecognition.AFR_FSDKEngine;
@@ -36,13 +34,15 @@ import com.guo.android_extend.widget.CameraFrameData;
 import com.guo.android_extend.widget.CameraGLSurfaceView;
 import com.guo.android_extend.widget.CameraSurfaceView;
 import com.guo.android_extend.widget.CameraSurfaceView.OnCameraListener;
-import com.qmuiteam.qmui.widget.QMUIEmptyView;
-import com.qmuiteam.qmui.widget.dialog.QMUIDialog;
-import com.qmuiteam.qmui.widget.dialog.QMUITipDialog;
+import com.iwakeup.facelcoker.library.BluetoothSPP;
+
+
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.iwakeup.facelcoker.DataShare.bluetooth;
 
 /**
  * Created by gqj3375 on 2017/4/28.
@@ -64,6 +64,7 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
     FRAbsLoop mFRAbsLoop = null;
     AFT_FSDKFace mAFT_FSDKFace = null;
     Handler mHandler;
+    ProgressBar progressBar;
 
     Runnable hide = new Runnable() {
         @Override
@@ -125,6 +126,7 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
                     Log.d(TAG, "fit Score:" + max + ", NAME:" + name);
                     final String mNameShow = name;
                     mHandler.removeCallbacks(hide);
+
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -136,9 +138,14 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
                             mImageView.setRotation(90);
                             mImageView.setImageAlpha(255);
                             mImageView.setImageBitmap(bmp);
-
                             System.out.println(max_score);
-                            ShowDialog(max_score);
+
+                            if ( max_score>0.65){
+                             sendcast();
+                            }
+
+
+
 
 
                         }
@@ -161,6 +168,15 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
             }
 
         }
+        private void sendcast() {
+
+            Intent intent=new Intent();
+            intent.setAction("ok");
+            intent.putExtra("cast","A");
+            //发送广播
+            sendBroadcast(intent);
+
+        }
 
         @Override
         public void over() {
@@ -169,22 +185,27 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
         }
     }
 
-    private void ShowDialog(float max_score  ) {
-        AlertDialog.Builder  builder =new AlertDialog.Builder(this);
 
-        builder.setTitle("成功");
-        builder.setMessage("识别成功");
-        final AlertDialog dialog=builder.show();
-        if ( max_score>0.5){
-            dialog.show();
-        }
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                dialog.dismiss();
-            }
-        }, 1000);
-    }
+//    private void ShowDialog(float max_score,String name  ) {
+//        AlertDialog.Builder  builder =new AlertDialog.Builder(this);
+//        DecimalFormat df   = new DecimalFormat("######0.00");
+//        builder.setTitle(name);
+//        builder.setMessage("识别成功 "+df.format(max_score));
+//        final AlertDialog dialog=builder.show();
+//        if ( max_score>0.5){
+//            dialog.show();
+//            progressBar.setVisibility(View.INVISIBLE);
+//
+//        }
+//        new Handler().postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                dialog.dismiss();
+//                progressBar.setVisibility(View.VISIBLE);
+//            }
+//        }, 1000);
+//
+//    }
 
     private TextView mTextView;
     private TextView mTextView1;
@@ -198,6 +219,9 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
         // TODO Auto-generated method stub
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.activity_camera);
+
+
+        bluetooth=new BluetoothSPP(this);
         mGLSurfaceView = (CameraGLSurfaceView) findViewById(R.id.glsurfaceView);
         mGLSurfaceView.setOnTouchListener(this);
         mSurfaceView = (CameraSurfaceView) findViewById(R.id.surfaceView);
@@ -205,8 +229,11 @@ public class DetecterActivity extends Activity implements OnCameraListener, View
         mSurfaceView.setupGLSurafceView(mGLSurfaceView, true, false, 90);
         mSurfaceView.debug_print_fps(true, false);
 
+        progressBar=findViewById(R.id.progressBar);
+        progressBar.setMax(100);
+
         //snap
-        mTextView = (TextView) findViewById(R.id.textView);
+        mTextView = (TextView) findViewById(R.id.dd);
         mTextView.setText("");
         mTextView1 = (TextView) findViewById(R.id.textView1);
         mTextView1.setText("");

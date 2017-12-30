@@ -2,10 +2,13 @@ package com.iwakeup.facelcoker;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -13,33 +16,107 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.iwakeup.facelcoker.library.BluetoothSPP;
+import com.iwakeup.facelcoker.library.BluetoothService;
+import com.iwakeup.facelcoker.library.BluetoothState;
+import com.iwakeup.facelcoker.library.DeviceList;
+
+import static com.iwakeup.facelcoker.DataShare.bluetooth;
+
 public class MainActivity extends Activity implements OnClickListener, AlertDialog.OnClickListener {
-	private final String TAG = this.getClass().toString();
+    private final String TAG = this.getClass().toString();
 
-	private static final int REQUEST_CODE_IMAGE_CAMERA = 1;
-	private static final int REQUEST_CODE_IMAGE_OP = 2;
-	private static final int REQUEST_CODE_OP = 3;
+    private static final int REQUEST_CODE_IMAGE_CAMERA = 1;
+    private static final int REQUEST_CODE_IMAGE_OP = 2;
+    private static final int REQUEST_CODE_OP = 3;
 
-	private Uri mPath;
+    private Uri mPath;
+    TextView stateBox;
+    private BluetoothAdapter mBluetoothAdapter = null;
 
-	/* (non-Javadoc)
+    // Member object for the chat services
+    private BluetoothService mChatService = null;
+
+
+
+    /* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
 	 */
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		// TODO Auto-generated method stub
-		super.onCreate(savedInstanceState);
-		this.setContentView(R.layout.activity_main);
-		View v = this.findViewById(R.id.button1);
-		v.setOnClickListener(this);
-		v = this.findViewById(R.id.button2);
-		v.setOnClickListener(this);
-	}
+
+    public void open(){
+
+        bluetooth.send("B", true);
+
+    }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        super.onCreate(savedInstanceState);
+        this.setContentView(R.layout.activity_main);
+
+        bluetooth = new BluetoothSPP(this);
+        receivebroadcast();
+        View v = this.findViewById(R.id.button1);
+        v.setOnClickListener(this);
+        v = this.findViewById(R.id.button2);
+        v.setOnClickListener(this);
+
+        Button blbtn = findViewById(R.id.bluebtn);
+        blbtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                bluetooth.setDeviceTarget(BluetoothState.DEVICE_OTHER);
+                Intent intent = new Intent(getApplicationContext(), DeviceList.class);
+                startActivityForResult(intent, BluetoothState.REQUEST_CONNECT_DEVICE);
+            }
+        });
+        stateBox = findViewById(R.id.stateBox);
+
+
+
+
+    }
+
+
+
+    //接收到广播
+
+    LocalBroadcastManager broadcastManager;
+
+    public void receivebroadcast(){
+
+        broadcastManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("com.iwakeup.kaixue.View");
+        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+
+    }
+
+    BroadcastReceiver broadcastReceiver=new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            int resource = (int) intent.getSerializableExtra("errCode");
+            System.out.println(resource+"RERERE");
+            //做相应的操作
+            open();
+            broadcastManager.unregisterReceiver(this);
+
+
+        }
+    };
+
+
+
+
 
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onDestroy()
@@ -49,6 +126,9 @@ public class MainActivity extends Activity implements OnClickListener, AlertDial
 		// TODO Auto-generated method stub
 		super.onDestroy();
 	}
+    public String cu_Name = null;
+    public int cu_Age = -1 ;
+    public int IsTrain = 0 ;
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -77,7 +157,68 @@ public class MainActivity extends Activity implements OnClickListener, AlertDial
 			Bitmap bmp = Application.decodeImage(file);
 			startOilPainting(bmp, file);
 		}
+
+
+        if ( resultCode == 0) {
+            // 取出Intent里的数据
+
+            String Name = data.getStringExtra("Name");
+            int Age = Integer.parseInt(data.getStringExtra("Age"));
+            cu_Name = Name;
+            cu_Age = Age;
+            IsTrain = 1;
+        }
+
+        if(requestCode == BluetoothState.REQUEST_CONNECT_DEVICE) {
+            if(resultCode == Activity.RESULT_OK)
+            {   bluetooth.connect(data);
+                stateBox.setText("State:Connected");
+
+
+            }
+        } else if(requestCode == BluetoothState.REQUEST_ENABLE_BT) {
+            if (resultCode == Activity.RESULT_OK) {
+                bluetooth.setupService();
+                //bt.startService(BluetoothState.DEVICE_ANDROID);
+
+                //setup();
+            } else {
+                stateBox.setText("State:Can't Connected");
+                Toast.makeText(getApplicationContext()
+                        , "Bluetooth was not enabled."
+                        , Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+
+        }
+
+
+
 	}
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (!bluetooth.isBluetoothEnabled()) {
+            Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(intent, BluetoothState.REQUEST_ENABLE_BT);
+            Toast.makeText(this,"蓝牙已关闭",Toast.LENGTH_LONG);
+            Log.d("BlueToothMsg", "close");
+        } else {
+            if(!bluetooth.isServiceAvailable()) {
+                bluetooth=new BluetoothSPP(getApplicationContext());
+                bluetooth.setupService();
+                bluetooth.startService(BluetoothState.DEVICE_ANDROID);
+                //setup();
+                Toast.makeText(this, "蓝牙已开启", Toast.LENGTH_LONG);
+                Log.d("BlueToothMsg", "open");
+            }
+        }
+    }
+
+
 
 	@Override
 	public void onClick(View paramView) {
@@ -103,6 +244,8 @@ public class MainActivity extends Activity implements OnClickListener, AlertDial
 								case 0:
 									Intent back = new Intent(MainActivity.this, DetecterActivity_Front.class);
 									startActivityForResult(back, REQUEST_CODE_OP);
+
+
 
 								break;
 								case 1:
@@ -232,6 +375,14 @@ public class MainActivity extends Activity implements OnClickListener, AlertDial
 				break;
 			default:;
 		}
+
+
 	}
+
+
+
+
+
+
 }
 
